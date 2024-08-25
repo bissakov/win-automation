@@ -9,7 +9,7 @@ mkdir .\build\> nul 2>&1
 pushd .\build\
 
 set entry=%src_dir%\main.cpp
-set src_files=
+set src_files=%src_dir%/core/application.cpp %src_dir%/win32/win32.cpp
 
 set third_party=User32.lib
 set includes=-I%cwd% /I"%src_dir%" ^

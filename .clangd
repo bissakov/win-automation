@@ -1,2 +1,3 @@
 CompileFlags:
-  Add: [-std=c++20, -W4, -Wunused-variable, -I., -Isrc, -Iinclude]
+  Add: [-std=c++20, -W4, -Wunused-variable, -I., -Isrc, -Isrc/core, -Isrc/win32, -Iinclude]
+
