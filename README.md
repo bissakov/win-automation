@@ -14,3 +14,16 @@ cd win-automation
 # Run
 ./build/automation.exe
 ```
+
+## Future plans
+- Replicate basic pywinauto features (excluding UIA).
+- Connect to an already running application:
+  - By PID;
+  - By process path;
+  - By process title;
+- Think of a way of dealing with changing processes (supply the new executable name and look for processes after a certain time?).
+- Interact with windows and elements.
+- Print full window element tree.
+- Keyboard, mouse simulation.
+- Screenshots.
+- Python wrapper.
