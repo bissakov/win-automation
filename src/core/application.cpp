@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <cassert>
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <string>
@@ -34,11 +35,32 @@ Application::operator std::string() const noexcept {
   return std::format(
       "Application(p_hwnd={}, t_hwnd={}, cmd=\"{}\", "
       "pid={}, tid={}, is_running={}, is_64_bit={})",
-      p_hwnd, t_hwnd, cmd, pid, tid, is_running, is_64bit);
+      reinterpret_cast<uintptr_t>(p_hwnd), reinterpret_cast<uintptr_t>(t_hwnd),
+      cmd, pid, tid, is_running, is_64bit);
 }
 
 std::ostream& operator<<(std::ostream& os, const Application& app) noexcept {
   os << std::string(app);
+  return os;
+}
+
+Window::Window() noexcept : hwnd(NULL), is_visible(false) {}
+
+Window::Window(HWND hwnd, std::string title, bool is_visible) noexcept
+    : hwnd(hwnd), title(title), is_visible(is_visible) {}
+
+Window::Window(HWND hwnd) noexcept
+    : hwnd(hwnd),
+      title(GetWindowTitle(hwnd)),
+      is_visible(IsWindowVisible(hwnd) != 0) {}
+
+Window::operator std::string() const noexcept {
+  return std::format("Window(hwnd={}, title=\"{}\", is_visible={})",
+                     reinterpret_cast<uintptr_t>(hwnd), title, is_visible);
+}
+
+std::ostream& operator<<(std::ostream& os, const Window& win) noexcept {
+  os << std::string(win);
   return os;
 }
 
@@ -92,7 +114,7 @@ bool Start(const char* cmd, Application* app) noexcept {
   app->cmd = cmd;
   app->pid = pi.dwProcessId;
   app->tid = pi.dwThreadId;
-  app->is_running = IsProcessRunning(app->pid);
+  app->is_running = true;
   app->is_64bit = IsProcess64Bit(pi.hProcess);
 
   return true;
@@ -123,4 +145,32 @@ bool Kill(Application* app) noexcept {
 
   app->is_running = false;
   return true;
+}
+
+std::string GetWindowTitle(HWND hwnd) {
+  char title[256];
+  GetWindowTextA(hwnd, title, sizeof(title));
+  return std::string(title);
+}
+
+static inline BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+  Application* app = reinterpret_cast<Application*>(lParam);
+  assert(app != nullptr);
+
+  DWORD window_pid = 0;
+  GetWindowThreadProcessId(hwnd, &window_pid);
+
+  if (window_pid == app->pid) {
+    app->windows.push_back(Window{hwnd});
+  }
+
+  return TRUE;
+}
+
+void Windows(Application* app) noexcept {
+  EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(app));
+
+  for (const Window& win : app->windows) {
+    std::cout << win << "\n";
+  }
 }
