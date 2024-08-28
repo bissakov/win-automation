@@ -6,24 +6,37 @@
 int main() {
   // NOTE: test function
 
-  Application app;
+  const char* cmds[2] = {
+      "C:/Home/Soft/DB Browser for SQLite/DB Browser for SQLite.exe",
+      "C:/WINDOWS/system32/notepad.exe"};
 
-  const char* cmd =
-      "C:/Home/Soft/DB Browser for SQLite/DB Browser for SQLite.exe";
-  if (!Start(cmd, &app)) {
-    std::cerr << std::format("Failed to start the app - {}\n", cmd);
-    return 1;
-  }
+  for (size_t i = 0; i < 2; ++i) {
+    Application app;
 
-  std::cout << app << "\n";
+    if (!Start(cmds[i], &app)) {
+      std::cerr << std::format("Failed to start the app - {}\n", cmds[i]);
+      return 1;
+    }
 
-  Sleep(1000);
+    std::cout << app << "\n";
 
-  Windows(&app);
+    Sleep(1000);
 
-  if (!Kill(&app)) {
-    std::cerr << "Failed to kill the process" << "\n";
-    return 1;
+    Windows(&app);
+
+    Window win{&app};
+    if (!TopWindow(&win)) {
+      std::cout << "Application does not have visible windows" << "\n";
+    } else {
+      std::cout << "Top window: " << win << "\n";
+    }
+
+    if (!Kill(&app)) {
+      std::cerr << "Failed to kill the process" << "\n";
+      return 1;
+    }
+
+    std::cout << "\n";
   }
 
   return 0;
