@@ -44,13 +44,19 @@ std::ostream& operator<<(std::ostream& os, const Application& app) noexcept {
   return os;
 }
 
-Window::Window() noexcept : hwnd(NULL), is_visible(false) {}
+Window::Window(Application* parent_app) noexcept
+    : hwnd(NULL), parent_app(parent_app), is_visible(false) {}
 
-Window::Window(HWND hwnd, std::string title, bool is_visible) noexcept
-    : hwnd(hwnd), title(title), is_visible(is_visible) {}
-
-Window::Window(HWND hwnd) noexcept
+Window::Window(HWND hwnd, Application* parent_app, std::string title,
+               bool is_visible) noexcept
     : hwnd(hwnd),
+      parent_app(parent_app),
+      title(title),
+      is_visible(is_visible) {}
+
+Window::Window(HWND hwnd, Application* parent_app) noexcept
+    : hwnd(hwnd),
+      parent_app(parent_app),
       title(GetWindowTitle(hwnd)),
       is_visible(IsWindowVisible(hwnd) != 0) {}
 
@@ -153,7 +159,7 @@ std::string GetWindowTitle(HWND hwnd) {
   return std::string(title);
 }
 
-static inline BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+static inline BOOL CALLBACK EnumWindowsProcWindows(HWND hwnd, LPARAM lParam) {
   Application* app = reinterpret_cast<Application*>(lParam);
   assert(app != nullptr);
 
@@ -161,16 +167,51 @@ static inline BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
   GetWindowThreadProcessId(hwnd, &window_pid);
 
   if (window_pid == app->pid) {
-    app->windows.push_back(Window{hwnd});
+    app->windows.push_back(Window{hwnd, app});
   }
 
   return TRUE;
 }
 
 void Windows(Application* app) noexcept {
-  EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(app));
+  EnumWindows(EnumWindowsProcWindows, reinterpret_cast<LPARAM>(app));
 
   for (const Window& win : app->windows) {
     std::cout << win << "\n";
   }
+}
+
+static inline BOOL CALLBACK EnumWindowsTopWindow(HWND hwnd, LPARAM lParam) {
+  Window* win = reinterpret_cast<Window*>(lParam);
+  assert(win != nullptr);
+
+  DWORD window_pid = 0;
+  GetWindowThreadProcessId(hwnd, &window_pid);
+
+  if (window_pid == win->parent_app->pid) {
+    bool is_visible = (IsWindowVisible(hwnd) != 0);
+    if (!is_visible) {
+      return TRUE;
+    }
+
+    win->hwnd = hwnd;
+    win->title = GetWindowTitle(hwnd);
+    win->is_visible = is_visible;
+  }
+
+  return TRUE;
+}
+
+bool TopWindow(Window* win) noexcept {
+  if (win->parent_app == nullptr) {
+    return false;
+  }
+
+  EnumWindows(EnumWindowsTopWindow, reinterpret_cast<LPARAM>(win));
+
+  if (win->parent_app == nullptr || win->hwnd == NULL) {
+    return false;
+  }
+
+  return true;
 }

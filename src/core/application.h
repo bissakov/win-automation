@@ -6,14 +6,18 @@
 #include <string>
 #include <vector>
 
+typedef struct Application Application;
+
 struct Window {
   HWND hwnd;
+  Application* parent_app;
   std::string title;
   bool is_visible;
 
-  Window() noexcept;
-  Window(HWND hwnd, std::string title, bool is_visible) noexcept;
-  explicit Window(HWND hwnd) noexcept;
+  explicit Window(Application* parent_app) noexcept;
+  Window(HWND hwnd, Application* parent_app, std::string title,
+         bool is_visible) noexcept;
+  explicit Window(HWND hwnd, Application* parent_app) noexcept;
 
   operator std::string() const noexcept;
 };
@@ -44,6 +48,7 @@ bool IsProcessRunning(DWORD process_id);
 bool Start(const char* cmd, Application* app) noexcept;
 bool Kill(Application* app) noexcept;
 void Windows(Application* app) noexcept;
+bool TopWindow(Window* win) noexcept;
 
 std::string GetWindowTitle(HWND hwnd);
 
